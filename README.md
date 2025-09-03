@@ -17,6 +17,7 @@ Run on your bash after cloning the repository:
     docker compose up -d --build
     docker compose exec app composer install
     docker compose exec app php bin/console doctrine:migrations:migrate
+    docker compose exec app php bin/console doctrine:fixtures:load
     docker compose exec app php ./vendor/bin/phpunit tests (to run all tests)
 ```
 
