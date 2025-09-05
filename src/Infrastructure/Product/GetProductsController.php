@@ -94,9 +94,9 @@ class GetProductsController
                 } else {
                     throw new InvalidArgumentException('Invalid query parameters', 400);
                 }
-
-                $totalPages = (int) ceil($totalProducts / $limit);
             }
+
+            $totalPages = (int) \ceil($totalProducts / $limit);
         } catch (Exception $e) {
             $responseMessage = $e->getMessage();
             $statusCode = $e->getCode() ?: 400;
