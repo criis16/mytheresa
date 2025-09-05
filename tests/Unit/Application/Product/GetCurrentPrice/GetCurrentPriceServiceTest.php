@@ -8,25 +8,33 @@ use App\Domain\Product\ProductSku;
 use App\Domain\Product\ProductPrice;
 use App\Domain\Product\ProductCategory;
 use PHPUnit\Framework\MockObject\MockObject;
+use App\Domain\Shared\ConvertPriceToCentsService;
 use App\Application\Product\GetCurrentPrice\GetCurrentPriceService;
 
 class GetCurrentPriceServiceTest extends TestCase
 {
     private GetCurrentPriceService $sut;
 
+    /** @var ConvertPriceToCentsService&MockObject */
+    private ConvertPriceToCentsService $convertPriceToCentsService;
+
     protected function setUp(): void
     {
-        $this->sut = new GetCurrentPriceService();
+        $this->convertPriceToCentsService = $this->createMock(ConvertPriceToCentsService::class);
+        $this->sut = new GetCurrentPriceService(
+            $this->convertPriceToCentsService
+        );
     }
 
     public function testExecuteWithDiscounts(): void
     {
         $skuValue = '000003';
         $categoryValue = 'boots';
-        $priceValue = 100.55;
+        $priceValue = 100.00;
+        $finalPriceValue = 70.00;
         $discountPercentage = '30%';
-        $expectedOriginalPrice = 10055;
-        $expectedFinalPrice = 7039;
+        $expectedOriginalPrice = 10000;
+        $expectedFinalPrice = 7000;
 
         /** @var ProductSku&MockObject */
         $productSku = $this->createMock(ProductSku::class);
@@ -58,6 +66,13 @@ class GetCurrentPriceServiceTest extends TestCase
             ->method('getPrice')
             ->willReturn($productPrice);
 
+        $this->convertPriceToCentsService->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturnMap([
+                [$priceValue, $expectedOriginalPrice],
+                [$finalPriceValue, $expectedFinalPrice]
+            ]);
+
         $this->assertEquals(
             [
                 'original' => $expectedOriginalPrice,
@@ -73,7 +88,7 @@ class GetCurrentPriceServiceTest extends TestCase
     {
         $skuValue = '000002';
         $categoryValue = 'sandals';
-        $priceValue = 100.55;
+        $priceValue = $finalPriceValue = 100.55;
         $discountPercentage = null;
         $expectedFinalPrice = $expectedOriginalPrice = 10055;
 
@@ -106,6 +121,13 @@ class GetCurrentPriceServiceTest extends TestCase
         $product->expects(self::once())
             ->method('getPrice')
             ->willReturn($productPrice);
+
+        $this->convertPriceToCentsService->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturnMap([
+                [$priceValue, $expectedOriginalPrice],
+                [$finalPriceValue, $expectedFinalPrice]
+            ]);
 
         $this->assertEquals(
             [

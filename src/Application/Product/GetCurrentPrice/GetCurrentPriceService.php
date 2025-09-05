@@ -3,6 +3,7 @@
 namespace App\Application\Product\GetCurrentPrice;
 
 use App\Domain\Product\Product;
+use App\Domain\Shared\ConvertPriceToCentsService;
 
 class GetCurrentPriceService
 {
@@ -13,6 +14,14 @@ class GetCurrentPriceService
     private const DISCOUNT_BY_PRODUCTS = [
         '000003' => 15
     ];
+
+    private ConvertPriceToCentsService $convertPriceToCentsService;
+
+    public function __construct(
+        ConvertPriceToCentsService $convertPriceToCentsService
+    ) {
+        $this->convertPriceToCentsService = $convertPriceToCentsService;
+    }
 
     /**
      * Calculate the current price of a product considering applicable discounts
@@ -32,8 +41,8 @@ class GetCurrentPriceService
         }
 
         return [
-            'original' => $this->convertPriceToCents($originalPrice),
-            'final' => $this->convertPriceToCents($finalPrice),
+            'original' => $this->convertPriceToCentsService->execute($originalPrice),
+            'final' => $this->convertPriceToCentsService->execute($finalPrice),
             'discount_percentage' => $productDiscountMessage,
             'currency' => self::CURRENCY
         ];
@@ -72,16 +81,5 @@ class GetCurrentPriceService
     private function applyDiscountPercentage(float $price, int $discountPercentage): float
     {
         return $price - ($price * $discountPercentage / 100);
-    }
-
-    /**
-     * Convert price to cents
-     *
-     * @param float $price
-     * @return integer
-     */
-    private function convertPriceToCents(float $price): int
-    {
-        return (int) \round($price * 100);
     }
 }

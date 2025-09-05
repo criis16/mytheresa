@@ -10,6 +10,7 @@ use App\Domain\Product\ProductName;
 use App\Domain\Product\ProductPrice;
 use App\Domain\Product\ProductCategory;
 use PHPUnit\Framework\MockObject\MockObject;
+use App\Domain\Shared\ConvertPriceToCentsService;
 use App\Application\Product\Adapters\ProductAdapter;
 use App\Domain\Product\Repositories\RepositoryInterface;
 use App\Application\Product\GetCurrentPrice\GetCurrentPriceService;
@@ -28,15 +29,20 @@ class GetProductsLessThanPriceServiceTest extends TestCase
     /** @var GetCurrentPriceService&MockObject */
     private GetCurrentPriceService $getCurrentPriceService;
 
+    /** @var ConvertPriceToCentsService&MockObject */
+    private ConvertPriceToCentsService $convertPriceToCentsService;
+
     protected function setUp(): void
     {
         $this->repository = $this->createMock(RepositoryInterface::class);
         $this->productAdapter = $this->createMock(ProductAdapter::class);
         $this->getCurrentPriceService = $this->createMock(GetCurrentPriceService::class);
+        $this->convertPriceToCentsService = $this->createMock(ConvertPriceToCentsService::class);
         $this->sut = new GetProductsLessThanPriceService(
             $this->repository,
             $this->productAdapter,
-            $this->getCurrentPriceService
+            $this->getCurrentPriceService,
+            $this->convertPriceToCentsService
         );
     }
 
@@ -50,6 +56,10 @@ class GetProductsLessThanPriceServiceTest extends TestCase
 
         $productPrice = new ProductPrice($priceCents);
 
+        $this->convertPriceToCentsService->expects($this->once())
+            ->method('execute')
+            ->with($priceInput)
+            ->willReturn($priceCents);
         $this->repository->expects(self::once())
             ->method('getProductsByPriceLessThan')
             ->with($productPrice)
@@ -70,11 +80,17 @@ class GetProductsLessThanPriceServiceTest extends TestCase
         array $repositoryProductsResult,
         Product $productInput,
         float $priceInput,
+        int $priceCents,
         ProductPrice $productPrice,
         array $currentPriceServiceResult,
         array $currentProductAdaptedResult,
         array $expectedResult
     ): void {
+        $this->convertPriceToCentsService->expects($this->once())
+            ->method('execute')
+            ->with($priceInput)
+            ->willReturn($priceCents);
+
         $this->repository->expects(self::once())
             ->method('getProductsByPriceLessThan')
             ->with($productPrice)
@@ -128,6 +144,7 @@ class GetProductsLessThanPriceServiceTest extends TestCase
             'repository_products_result' => [$product],
             'product_input' => $product,
             'product_price_input' => $priceInput,
+            'price_cents' => $priceCents,
             'product_price' => $productPrice,
             'current_price_service_result' => $currentPriceExpectedResult,
             'current_product_adapted_result' => $currentProductAdaptedResult,

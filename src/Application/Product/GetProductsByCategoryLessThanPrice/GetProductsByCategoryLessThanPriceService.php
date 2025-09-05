@@ -5,6 +5,7 @@ namespace App\Application\Product\GetProductsByCategoryLessThanPrice;
 use InvalidArgumentException;
 use App\Domain\Product\ProductPrice;
 use App\Domain\Product\ProductCategory;
+use App\Domain\Shared\ConvertPriceToCentsService;
 use App\Application\Product\Adapters\ProductAdapter;
 use App\Domain\Product\Repositories\RepositoryInterface;
 use App\Application\Product\GetCurrentPrice\GetCurrentPriceService;
@@ -14,15 +15,18 @@ class GetProductsByCategoryLessThanPriceService
     private RepositoryInterface $repository;
     private ProductAdapter $adapter;
     private GetCurrentPriceService $getCurrentPriceService;
+    private ConvertPriceToCentsService $convertPriceToCentsService;
 
     public function __construct(
         RepositoryInterface $repository,
         ProductAdapter $adapter,
-        GetCurrentPriceService $getCurrentPriceService
+        GetCurrentPriceService $getCurrentPriceService,
+        ConvertPriceToCentsService $convertPriceToCentsService
     ) {
         $this->repository = $repository;
         $this->adapter = $adapter;
         $this->getCurrentPriceService = $getCurrentPriceService;
+        $this->convertPriceToCentsService = $convertPriceToCentsService;
     }
 
     /**
@@ -38,7 +42,7 @@ class GetProductsByCategoryLessThanPriceService
         $adaptedProducts = [];
         $products = $this->repository->getProductsByCategoryAndPriceLessThan(
             new ProductCategory($category),
-            new ProductPrice($this->convertPriceToCents($priceLessThan))
+            new ProductPrice($this->convertPriceToCentsService->execute($priceLessThan))
         );
 
         if (empty($products)) {
@@ -55,16 +59,5 @@ class GetProductsByCategoryLessThanPriceService
         }
 
         return $adaptedProducts;
-    }
-
-    /**
-     * Convert price to cents
-     *
-     * @param float $price
-     * @return integer
-     */
-    private function convertPriceToCents(float $price): int
-    {
-        return (int) \round($price * 100);
     }
 }

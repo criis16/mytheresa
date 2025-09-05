@@ -7,6 +7,7 @@ use App\Domain\Product\ProductPrice;
 use App\Domain\Product\ProductCategory;
 use App\Entity\Product as EntityProduct;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Domain\Shared\ConvertPriceToCentsService;
 use App\Domain\Product\Repositories\RepositoryInterface;
 use App\Application\Product\Adapters\EntityProductAdapter;
 
@@ -18,14 +19,17 @@ class DoctrineRepository implements RepositoryInterface
     private EntityManagerInterface $entityManager;
     private EntityRepository $repository;
     private EntityProductAdapter $adapter;
+    private ConvertPriceToCentsService $convertPriceToCentsService;
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        EntityProductAdapter $adapter
+        EntityProductAdapter $adapter,
+        ConvertPriceToCentsService $convertPriceToCentsService
     ) {
         $this->entityManager = $entityManager;
         $this->repository = $this->entityManager->getRepository(EntityProduct::class);
         $this->adapter = $adapter;
+        $this->convertPriceToCentsService = $convertPriceToCentsService;
     }
 
     public function getProducts(): array
@@ -44,7 +48,7 @@ class DoctrineRepository implements RepositoryInterface
 
     public function getProductsByPriceLessThan(ProductPrice $price): array
     {
-        $priceInCents = $this->convertPriceToCents($price->getValue());
+        $priceInCents = $this->convertPriceToCentsService->execute($price->getValue());
 
         $queryBuilder = $this->repository->createQueryBuilder('product');
         $queryBuilder->where('product.' . self::PRICE_FIELD . ' < :maxPrice')
@@ -58,7 +62,7 @@ class DoctrineRepository implements RepositoryInterface
     public function getProductsByCategoryAndPriceLessThan(ProductCategory $category, ProductPrice $price): array
     {
         $categoryValue = $category->getValue();
-        $priceInCents = $this->convertPriceToCents($price->getValue());
+        $priceInCents = $this->convertPriceToCentsService->execute($price->getValue());
 
         $queryBuilder = $this->repository->createQueryBuilder('product');
         $queryBuilder->where('product.' . self::CATEGORY_FIELD . ' = :category')
@@ -85,16 +89,5 @@ class DoctrineRepository implements RepositoryInterface
             },
             $items
         );
-    }
-
-    /**
-     * Convert price to cents
-     *
-     * @param float $price
-     * @return integer
-     */
-    private function convertPriceToCents(float $price): int
-    {
-        return (int) \round($price * 100);
     }
 }
