@@ -1,3 +1,7 @@
 controllers:
   resource: ../src/Controller/
   type: attribute
+
+get_products:
+  path: '/products'
+  controller: App\Infrastructure\Product\GetProductsController::getProducts

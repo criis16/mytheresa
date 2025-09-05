@@ -26,4 +26,8 @@ services:
     #Serivces definition
 
     #Controller definition
+    App\Infrastructure\Product\GetProductsController:
+        tags: ["controller.service_arguments"]
+        arguments:
+            $getProductsService: '@App\Application\Product\GetProducts\GetProductsService'
 
