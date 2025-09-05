@@ -57,6 +57,50 @@ In case of an error it will return a 400 status code.
                 "discount_percentage": "30%",
                 "currency": "EUR"
             }
+        },
+        {
+            "sku": "000002",
+            "name": "BV Lean leather ankle boots",
+            "category": "boots",
+            "price": {
+                "original": 99000,
+                "final": 69300,
+                "discount_percentage": "30%",
+                "currency": "EUR"
+            }
+        },
+        {
+            "sku": "000003",
+            "name": "Ashlington leather ankle boots",
+            "category": "boots",
+            "price": {
+                "original": 71000,
+                "final": 49700,
+                "discount_percentage": "30%",
+                "currency": "EUR"
+            }
+        },
+        {
+            "sku": "000004",
+            "name": "Naima embellished suede sandals",
+            "category": "sandals",
+            "price": {
+                "original": 79500,
+                "final": 79500,
+                "discount_percentage": null,
+                "currency": "EUR"
+            }
+        },
+        {
+            "sku": "000005",
+            "name": "Nathane leather sneakers",
+            "category": "sneakers",
+            "price": {
+                "original": 59000,
+                "final": 59000,
+                "discount_percentage": null,
+                "currency": "EUR"
+            }
         }
     ],
     "pagination": {
