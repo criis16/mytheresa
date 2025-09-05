@@ -42,6 +42,9 @@ class GetProductsByCategoryServiceTest extends TestCase
 
     public function testEmptyCase(): void
     {
+        $offset = 0;
+        $limit = 5;
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('No products found for the specified category');
 
@@ -58,7 +61,7 @@ class GetProductsByCategoryServiceTest extends TestCase
         $this->productAdapter->expects($this->never())
             ->method('adapt');
 
-        $this->sut->execute($categoryInput);
+        $this->sut->execute($categoryInput, $offset, $limit);
     }
 
     /**
@@ -69,6 +72,8 @@ class GetProductsByCategoryServiceTest extends TestCase
         Product $productInput,
         string $productCategoryInput,
         ProductCategory $productCategory,
+        int $offset,
+        int $limit,
         array $currentPriceServiceResult,
         array $currentProductAdaptedResult,
         array $expectedResult
@@ -87,7 +92,7 @@ class GetProductsByCategoryServiceTest extends TestCase
             ->with($productInput)
             ->willReturn($currentProductAdaptedResult);
 
-        $this->assertEquals($expectedResult, $this->sut->execute($productCategoryInput));
+        $this->assertEquals($expectedResult, $this->sut->execute($productCategoryInput, $offset, $limit));
     }
 
     public static function getProductsProvider(): array
@@ -99,6 +104,8 @@ class GetProductsByCategoryServiceTest extends TestCase
 
     private static function simpleCase(): array
     {
+        $offset = 0;
+        $limit = 5;
         $productCategoryInput = 'boots';
         $productCategory = new ProductCategory($productCategoryInput);
         $product = new Product(
@@ -126,6 +133,8 @@ class GetProductsByCategoryServiceTest extends TestCase
             'product_input' => $product,
             'product_category_input' => $productCategoryInput,
             'product_category' => $productCategory,
+            'offset' => $offset,
+            'limit' => $limit,
             'current_price_service_result' => $currentPriceExpectedResult,
             'current_product_adapted_result' => $currentProductAdaptedResult,
             'expected_output' => $expectedResult

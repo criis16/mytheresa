@@ -42,6 +42,9 @@ class GetProductsServiceTest extends TestCase
 
     public function testEmptyCase(): void
     {
+        $offset = 0;
+        $limit = 5;
+
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('No products found');
 
@@ -54,7 +57,7 @@ class GetProductsServiceTest extends TestCase
         $this->productAdapter->expects($this->never())
             ->method('adapt');
 
-        $this->assertEquals([], $this->sut->execute());
+        $this->assertEquals([], $this->sut->execute($offset, $limit));
     }
 
     /**
@@ -63,6 +66,8 @@ class GetProductsServiceTest extends TestCase
     public function testGetProducts(
         array $repositoryProductsResult,
         Product $productInput,
+        int $offset,
+        int $limit,
         array $currentPriceServiceResult,
         array $currentProductAdaptedResult,
         array $expectedResult
@@ -80,7 +85,7 @@ class GetProductsServiceTest extends TestCase
             ->with($productInput)
             ->willReturn($currentProductAdaptedResult);
 
-        $this->assertEquals($expectedResult, $this->sut->execute());
+        $this->assertEquals($expectedResult, $this->sut->execute($offset, $limit));
     }
 
     public static function getProductsProvider(): array
@@ -92,6 +97,9 @@ class GetProductsServiceTest extends TestCase
 
     private static function simpleCase(): array
     {
+        $offset = 0;
+        $limit = 5;
+
         $product = new Product(
             new ProductSku('000001'),
             new ProductName('Fake name'),
@@ -115,6 +123,8 @@ class GetProductsServiceTest extends TestCase
         return [
             'repository_products_result' => [$product],
             'product_input' => $product,
+            'offset' => $offset,
+            'limit' => $limit,
             'current_price_service_result' => $currentPriceExpectedResult,
             'current_product_adapted_result' => $currentProductAdaptedResult,
             'expected_output' => $expectedResult

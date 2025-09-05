@@ -26,12 +26,19 @@ class GetProductsService
     /**
      * Get all products with their current prices
      *
+     * @param int $offset
+     * @param int $limit
      * @return array
      */
-    public function execute(): array
-    {
+    public function execute(
+        int $offset,
+        int $limit
+    ): array {
         $adaptedProducts = [];
-        $products = $this->repository->getProducts();
+        $products = $this->repository->getProducts(
+            $offset,
+            $limit
+        );
 
         if (empty($products)) {
             throw new InvalidArgumentException('No products found');

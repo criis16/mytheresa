@@ -28,14 +28,21 @@ class GetProductsByCategoryService
      * Get all products in a specific category with their current prices
      *
      * @param string $category
+     * @param int $offset
+     * @param int $limit
      * @return array
      * @throws InvalidArgumentException if no products found for the category
      */
-    public function execute(string $category): array
-    {
+    public function execute(
+        string $category,
+        int $offset,
+        int $limit
+    ): array {
         $adaptedProducts = [];
         $products = $this->repository->getProductsByCategory(
-            new ProductCategory($category)
+            new ProductCategory($category),
+            $offset,
+            $limit
         );
 
         if (empty($products)) {

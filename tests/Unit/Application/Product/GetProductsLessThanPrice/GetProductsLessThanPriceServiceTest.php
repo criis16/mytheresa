@@ -10,7 +10,6 @@ use App\Domain\Product\ProductName;
 use App\Domain\Product\ProductPrice;
 use App\Domain\Product\ProductCategory;
 use PHPUnit\Framework\MockObject\MockObject;
-use App\Domain\Shared\ConvertPriceToCentsService;
 use App\Application\Product\Adapters\ProductAdapter;
 use App\Domain\Product\Repositories\RepositoryInterface;
 use App\Application\Product\GetCurrentPrice\GetCurrentPriceService;
@@ -29,37 +28,29 @@ class GetProductsLessThanPriceServiceTest extends TestCase
     /** @var GetCurrentPriceService&MockObject */
     private GetCurrentPriceService $getCurrentPriceService;
 
-    /** @var ConvertPriceToCentsService&MockObject */
-    private ConvertPriceToCentsService $convertPriceToCentsService;
-
     protected function setUp(): void
     {
         $this->repository = $this->createMock(RepositoryInterface::class);
         $this->productAdapter = $this->createMock(ProductAdapter::class);
         $this->getCurrentPriceService = $this->createMock(GetCurrentPriceService::class);
-        $this->convertPriceToCentsService = $this->createMock(ConvertPriceToCentsService::class);
         $this->sut = new GetProductsLessThanPriceService(
             $this->repository,
             $this->productAdapter,
-            $this->getCurrentPriceService,
-            $this->convertPriceToCentsService
+            $this->getCurrentPriceService
         );
     }
 
     public function testEmptyCase(): void
     {
-        $priceInput = 100.55;
+        $offset = 0;
+        $limit = 5;
         $priceCents = 10055;
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('No products found with price less than ' . $priceInput);
+        $this->expectExceptionMessage('No products found with price less than ' . $priceCents);
 
         $productPrice = new ProductPrice($priceCents);
 
-        $this->convertPriceToCentsService->expects($this->once())
-            ->method('execute')
-            ->with($priceInput)
-            ->willReturn($priceCents);
         $this->repository->expects(self::once())
             ->method('getProductsByPriceLessThan')
             ->with($productPrice)
@@ -70,7 +61,7 @@ class GetProductsLessThanPriceServiceTest extends TestCase
         $this->productAdapter->expects($this->never())
             ->method('adapt');
 
-        $this->sut->execute($priceInput);
+        $this->sut->execute($priceCents, $offset, $limit);
     }
 
     /**
@@ -79,18 +70,14 @@ class GetProductsLessThanPriceServiceTest extends TestCase
     public function testGetProductsByCategory(
         array $repositoryProductsResult,
         Product $productInput,
-        float $priceInput,
         int $priceCents,
         ProductPrice $productPrice,
+        int $offset,
+        int $limit,
         array $currentPriceServiceResult,
         array $currentProductAdaptedResult,
         array $expectedResult
     ): void {
-        $this->convertPriceToCentsService->expects($this->once())
-            ->method('execute')
-            ->with($priceInput)
-            ->willReturn($priceCents);
-
         $this->repository->expects(self::once())
             ->method('getProductsByPriceLessThan')
             ->with($productPrice)
@@ -105,7 +92,7 @@ class GetProductsLessThanPriceServiceTest extends TestCase
             ->with($productInput)
             ->willReturn($currentProductAdaptedResult);
 
-        $this->assertEquals($expectedResult, $this->sut->execute($priceInput));
+        $this->assertEquals($expectedResult, $this->sut->execute($priceCents, $offset, $limit));
     }
 
     public static function getProductsProvider(): array
@@ -117,7 +104,8 @@ class GetProductsLessThanPriceServiceTest extends TestCase
 
     private static function simpleCase(): array
     {
-        $priceInput = 100.55;
+        $offset = 0;
+        $limit = 5;
         $priceCents = 10055;
         $productPrice = new ProductPrice($priceCents);
         $product = new Product(
@@ -143,9 +131,10 @@ class GetProductsLessThanPriceServiceTest extends TestCase
         return [
             'repository_products_result' => [$product],
             'product_input' => $product,
-            'product_price_input' => $priceInput,
             'price_cents' => $priceCents,
             'product_price' => $productPrice,
+            'offset' => $offset,
+            'limit' => $limit,
             'current_price_service_result' => $currentPriceExpectedResult,
             'current_product_adapted_result' => $currentProductAdaptedResult,
             'expected_output' => $expectedResult

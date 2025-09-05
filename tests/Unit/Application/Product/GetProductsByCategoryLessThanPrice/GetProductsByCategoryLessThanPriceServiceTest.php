@@ -10,7 +10,6 @@ use App\Domain\Product\ProductName;
 use App\Domain\Product\ProductPrice;
 use App\Domain\Product\ProductCategory;
 use PHPUnit\Framework\MockObject\MockObject;
-use App\Domain\Shared\ConvertPriceToCentsService;
 use App\Application\Product\Adapters\ProductAdapter;
 use App\Domain\Product\Repositories\RepositoryInterface;
 use App\Application\Product\GetCurrentPrice\GetCurrentPriceService;
@@ -29,39 +28,31 @@ class GetProductsByCategoryLessThanPriceServiceTest extends TestCase
     /** @var GetCurrentPriceService&MockObject */
     private GetCurrentPriceService $getCurrentPriceService;
 
-    /** @var ConvertPriceToCentsService&MockObject */
-    private ConvertPriceToCentsService $convertPriceToCentsService;
-
     protected function setUp(): void
     {
         $this->repository = $this->createMock(RepositoryInterface::class);
         $this->productAdapter = $this->createMock(ProductAdapter::class);
         $this->getCurrentPriceService = $this->createMock(GetCurrentPriceService::class);
-        $this->convertPriceToCentsService = $this->createMock(ConvertPriceToCentsService::class);
         $this->sut = new GetProductsByCategoryLessThanPriceService(
             $this->repository,
             $this->productAdapter,
-            $this->getCurrentPriceService,
-            $this->convertPriceToCentsService
+            $this->getCurrentPriceService
         );
     }
 
     public function testEmptyCase(): void
     {
-        $priceInput = 100.55;
+        $offset = 0;
+        $limit = 5;
         $priceCents = 10055;
         $categoryInput = 'a category';
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('No products found for the specified category and price less than ' . $priceInput);
+        $this->expectExceptionMessage('No products found for the specified category and price less than ' . $priceCents);
 
         $productPrice = new ProductPrice($priceCents);
         $productCategory = new ProductCategory($categoryInput);
 
-        $this->convertPriceToCentsService->expects($this->once())
-            ->method('execute')
-            ->with($priceInput)
-            ->willReturn($priceCents);
         $this->repository->expects(self::once())
             ->method('getProductsByCategoryAndPriceLessThan')
             ->with($productCategory, $productPrice)
@@ -71,7 +62,7 @@ class GetProductsByCategoryLessThanPriceServiceTest extends TestCase
         $this->productAdapter->expects($this->never())
             ->method('adapt');
 
-        $this->sut->execute($categoryInput, $priceInput);
+        $this->sut->execute($categoryInput, $priceCents, $offset, $limit);
     }
 
     /**
@@ -80,20 +71,16 @@ class GetProductsByCategoryLessThanPriceServiceTest extends TestCase
     public function testGetProductsByCategory(
         array $repositoryProductsResult,
         Product $productInput,
-        float $priceInput,
         int $priceCents,
         string $categoryInput,
         ProductPrice $productPrice,
         ProductCategory $productCategory,
+        int $offset,
+        int $limit,
         array $currentPriceServiceResult,
         array $currentProductAdaptedResult,
         array $expectedResult
     ): void {
-        $this->convertPriceToCentsService->expects($this->once())
-            ->method('execute')
-            ->with($priceInput)
-            ->willReturn($priceCents);
-
         $this->repository->expects(self::once())
             ->method('getProductsByCategoryAndPriceLessThan')
             ->with($productCategory, $productPrice)
@@ -108,7 +95,7 @@ class GetProductsByCategoryLessThanPriceServiceTest extends TestCase
             ->with($productInput)
             ->willReturn($currentProductAdaptedResult);
 
-        $this->assertEquals($expectedResult, $this->sut->execute($categoryInput, $priceInput));
+        $this->assertEquals($expectedResult, $this->sut->execute($categoryInput, $priceCents, $offset, $limit));
     }
 
     public static function getProductsProvider(): array
@@ -120,7 +107,8 @@ class GetProductsByCategoryLessThanPriceServiceTest extends TestCase
 
     private static function simpleCase(): array
     {
-        $priceInput = 100.55;
+        $offset = 0;
+        $limit = 5;
         $priceCents = 10055;
         $categoryInput = 'boots';
         $productCategory = new ProductCategory($categoryInput);
@@ -148,11 +136,12 @@ class GetProductsByCategoryLessThanPriceServiceTest extends TestCase
         return [
             'repository_products_result' => [$product],
             'product_input' => $product,
-            'product_price_input' => $priceInput,
             'price_cents' => $priceCents,
             'product_category_input' => $categoryInput,
             'product_price' => $productPrice,
             'product_category' => $productCategory,
+            'offset' => $offset,
+            'limit' => $limit,
             'current_price_service_result' => $currentPriceExpectedResult,
             'current_product_adapted_result' => $currentProductAdaptedResult,
             'expected_output' => $expectedResult

@@ -32,35 +32,56 @@ class DoctrineRepository implements RepositoryInterface
         $this->convertPriceToCentsService = $convertPriceToCentsService;
     }
 
-    public function getProducts(): array
+    public function getProducts(int $offset, int $limit): array
     {
-        return $this->applyEntityAdapter($this->repository->findAll());
-    }
-
-    public function getProductsByCategory(ProductCategory $category): array
-    {
-        return $this->applyEntityAdapter(
-            $this->repository->findBy(
-                [self::CATEGORY_FIELD => $category->getValue()]
-            )
-        );
-    }
-
-    public function getProductsByPriceLessThan(ProductPrice $price): array
-    {
-        $priceInCents = $this->convertPriceToCentsService->execute($price->getValue());
-
-        $queryBuilder = $this->repository->createQueryBuilder('product');
-        $queryBuilder->where('product.' . self::PRICE_FIELD . ' < :maxPrice')
-            ->setParameter('maxPrice', $priceInCents);
+        $queryBuilder = $this->repository->createQueryBuilder('product')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit);
 
         $query = $queryBuilder->getQuery();
 
         return $this->applyEntityAdapter($query->getResult());
     }
 
-    public function getProductsByCategoryAndPriceLessThan(ProductCategory $category, ProductPrice $price): array
-    {
+    public function getProductsByCategory(
+        ProductCategory $category,
+        int $offset,
+        int $limit
+    ): array {
+        $queryBuilder = $this->repository->createQueryBuilder('product')
+            ->where('product.' . self::CATEGORY_FIELD . ' = :category')
+            ->setParameter('category', $category->getValue())
+            ->orderBy('product.id', 'ASC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit);
+
+        return $this->applyEntityAdapter($queryBuilder->getQuery()->getResult());
+    }
+
+    public function getProductsByPriceLessThan(
+        ProductPrice $price,
+        int $offset,
+        int $limit
+    ): array {
+        $priceInCents = $this->convertPriceToCentsService->execute($price->getValue());
+
+        $queryBuilder = $this->repository->createQueryBuilder('product');
+        $queryBuilder->where('product.' . self::PRICE_FIELD . ' < :maxPrice')
+            ->setParameter('maxPrice', $priceInCents)
+            ->setFirstResult($offset)
+            ->setMaxResults($limit);
+
+        $query = $queryBuilder->getQuery();
+
+        return $this->applyEntityAdapter($query->getResult());
+    }
+
+    public function getProductsByCategoryAndPriceLessThan(
+        ProductCategory $category,
+        ProductPrice $price,
+        int $offset,
+        int $limit
+    ): array {
         $categoryValue = $category->getValue();
         $priceInCents = $this->convertPriceToCentsService->execute($price->getValue());
 
@@ -68,11 +89,31 @@ class DoctrineRepository implements RepositoryInterface
         $queryBuilder->where('product.' . self::CATEGORY_FIELD . ' = :category')
             ->andWhere('product.' . self::PRICE_FIELD . ' < :maxPrice')
             ->setParameter('category', $categoryValue)
-            ->setParameter('maxPrice', $priceInCents);
+            ->setParameter('maxPrice', $priceInCents)
+            ->setFirstResult($offset)
+            ->setMaxResults($limit);
 
         $query = $queryBuilder->getQuery();
 
         return $this->applyEntityAdapter($query->getResult());
+    }
+
+    public function countProducts(array $criteria): int
+    {
+        $qb = $this->repository->createQueryBuilder('product')
+            ->select('COUNT(product.id)');
+
+        if (isset($criteria['category'])) {
+            $qb->andWhere('product.' . self::CATEGORY_FIELD . ' = :category')
+                ->setParameter('category', $criteria['category']);
+        }
+
+        if (isset($criteria['priceLessThan'])) {
+            $qb->andWhere('product.' . self::PRICE_FIELD . ' < :maxPrice')
+                ->setParameter('maxPrice', $criteria['priceLessThan']);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /**
